@@ -1,15 +1,13 @@
 import { useState } from "react";
 import server from "./server";
 import * as secp from 'ethereum-cryptography/secp256k1.js';
-// import { toHex } from 'ethereum-cryptography/utils.js';
-// const { utf8ToBytes } = require("ethereum-cryptography/utils");
-// const { keccak256 } = require("ethereum-cryptography/keccak");
 import { utf8ToBytes } from "ethereum-cryptography/utils";
 import { keccak256 } from "ethereum-cryptography/keccak";
-// import { Buffer } from "buffer";
 import { toHex } from 'ethereum-cryptography/utils.js';
 
-
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
 
 function Transfer({ address, setBalance, privateKey }) {
   const [sendAmount, setSendAmount] = useState("");
@@ -22,14 +20,12 @@ function Transfer({ address, setBalance, privateKey }) {
 
     const dataj = {
       sender: address,
-      // amount: parseInt(sendAmount),
-      // amount: parseInt(sendAmount).toString(),
+      amount: parseInt(sendAmount),
       recipient,
     }
 
     const msg = keccak256(utf8ToBytes(JSON.stringify(dataj)));
 
-    console.log(toHex(msg));
     const signature = secp.secp256k1.sign(msg, privateKey);
 
     try {
@@ -37,41 +33,16 @@ function Transfer({ address, setBalance, privateKey }) {
         data: { balance },
       } = await server.post(`send`, {
         sender: address,
-        amount: parseInt(sendAmount),
-        // amount: parseInt(sendAmount).toString(),
         recipient,
+        amount: parseInt(sendAmount),
         msg: toHex(msg),
-        signature,
+        signature: signature,
       });
       setBalance(balance);
     } catch (ex) {
-      // alert(ex.response.data.message);
-      console.log(ex);
-      alert(ex.response);
+      alert(ex.response.data.message);
     }
   }
-
-    // try {
-    //   const response = await server.post(`send`, {
-    //     sender: address,
-    //     amount: parseInt(sendAmount),
-    //     recipient,
-    //     msg,
-    //     signature,
-    //   });
-    //   if (response.data && response.data.balance) {
-    //     const { balance } = response.data;
-    //     setBalance(balance);
-    //   } else {
-    //     console.error("Invalid response from server:", response);
-    //   }
-    // } catch (ex) {
-    //   // alert(ex.response.data.message);
-    //   console.log(ex.response);
-    //   alert(ex.response);
-    // }
-
-
 
   return (
     <form className="container transfer" onSubmit={transfer}>
@@ -101,22 +72,3 @@ function Transfer({ address, setBalance, privateKey }) {
 }
 
 export default Transfer;
-
-
-
-
-
-// try {
-//   const {
-//       data: {balance},
-//   } = await server.post('send', {
-//       sender: address,
-//       recipient: recipient,
-//       amount: parseInt(sendAmount),
-//       challenge: JSON.parse(challenge),
-//       signature: JSON.parse(inputSignature)
-//   });
-//   setBalance(balance);
-// } catch (ex) {
-//   alert(ex.response.data.message);
-// }

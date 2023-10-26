@@ -2,12 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = 3042;
-// const { utf8ToBytes } = require("ethereum-cryptography/utils.js");
-// import * as secp from 'ethereum-cryptography/secp256k1.js';
 const secp = require("ethereum-cryptography/secp256k1");
-// import { toHex } from 'ethereum-cryptography/utils.js';
-const { toHex } = require("ethereum-cryptography/utils.js");
-
 
 app.use(cors());
 app.use(express.json());
@@ -26,35 +21,25 @@ app.get("/balance/:address", (req, res) => {
 
 app.post("/send", (req, res) => {
 
-  console.log("from my server: req.body: ", req.body)
-  console.log(req.body)
-
-
-
   // TODO: get a signature from the client-side application
   // recover the public address from the signature
 
-
-  
-  // convert amount to a number
-  // const amount = Number(amountS);
-  
-  // const { signature, data } = req.body;
-  
-  // const { sender, recipient, amount } = JSON.parse(data);
-  // const { sender, recipient, amount } = data;
-
-
   const { sender, recipient, amount, msg, signature } = req.body;
-  
-  publickey = toHex(signature.recoverPublicKey(msg).toRawBytes())
-  console.log("Public Key from server: ", publickey)
+
+  const signatureBigInt = {
+    r: BigInt(signature.r),
+    s: BigInt(signature.s),
+    recovery: signature.recovery
+  };
+
+  const isSigned = secp.secp256k1.verify(signatureBigInt, msg, sender);
+  console.log("isSigned from server: ", isSigned);
 
   setInitialBalance(sender);
   setInitialBalance(recipient);
 
   // if (sender !== publickey)
-  if (sender.toString() !== publickey.toString()) {
+  if (!isSigned) {
     res.status(400).send({ message: "Invalid Signature!" });
   } else if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
@@ -62,7 +47,6 @@ app.post("/send", (req, res) => {
     balances[sender] -= amount;
     balances[recipient] += amount;
     res.send({ balance: balances[sender] });
-    // res.send({ data: { balance: balances[sender] } });
   }
 });
 
